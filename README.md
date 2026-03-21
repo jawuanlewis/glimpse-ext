@@ -17,7 +17,7 @@ Chrome extension that shows instant word definitions on highlight — powered by
 1. Clone this repository:
 
    ```bash
-   git clone https://github.com/jnlewis/glimpse-ext.git
+   git clone https://github.com/jawuanlewis/glimpse-ext.git
    ```
 
 2. Open `chrome://extensions` in Chrome.
