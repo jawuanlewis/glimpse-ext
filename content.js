@@ -1,5 +1,5 @@
 (() => {
-  const POPUP_ID = "quick-define-popup";
+  const POPUP_ID = "glimpse-popup";
   let popupHost = null;
 
   // --- Popup lifecycle ---

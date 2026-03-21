@@ -1,6 +1,6 @@
 /* Host element for the popup — only positioning styles needed here.
    All visual styles live inside the Shadow DOM (see content.js). */
-#quick-define-popup {
+#glimpse-popup {
   position: absolute;
   z-index: 2147483647;
 }

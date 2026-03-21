@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Quick Define",
+  "name": "Glimpse",
   "version": "1.0.0",
   "description": "Instantly see definitions by highlighting any word on a webpage.",
   "permissions": ["activeTab"],
