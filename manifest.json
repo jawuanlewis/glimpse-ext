@@ -3,7 +3,6 @@
   "name": "Glimpse",
   "version": "1.0.0",
   "description": "Highlight any word to instantly see its definition.",
-  "permissions": ["activeTab"],
   "host_permissions": ["https://api.dictionaryapi.dev/*"],
   "background": {
     "service_worker": "background.js"
