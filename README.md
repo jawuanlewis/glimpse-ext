@@ -42,7 +42,6 @@ glimpse-ext/
 ├── manifest.json       # Extension config (Manifest V3)
 ├── background.js       # Service worker — handles API requests
 ├── content.js          # Content script — word selection & popup rendering
-├── content.css         # Host element positioning
 ├── popup/
 │   ├── popup.html      # Toolbar popup UI
 │   └── popup.js        # Toolbar popup logic

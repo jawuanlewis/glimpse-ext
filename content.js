@@ -24,7 +24,7 @@
     shadow.appendChild(style);
 
     const container = document.createElement("div");
-    container.className = "qd-popup";
+    container.className = "glimpse-popup";
     container.innerHTML = html;
     shadow.appendChild(container);
 
@@ -32,7 +32,7 @@
     positionPopup(popupHost, rect);
 
     // Close button
-    const closeBtn = shadow.querySelector(".qd-close");
+    const closeBtn = shadow.querySelector(".glimpse-close");
     if (closeBtn) {
       closeBtn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -69,16 +69,16 @@
   function renderDefinition(data) {
     if (data.error) {
       return `
-        <div class="qd-header">
-          <span class="qd-word">Not found</span>
-          <button class="qd-close" aria-label="Close">&times;</button>
+        <div class="glimpse-header">
+          <span class="glimpse-word">Not found</span>
+          <button class="glimpse-close" aria-label="Close">&times;</button>
         </div>
-        <p class="qd-error">${escapeHtml(data.error)}</p>
+        <p class="glimpse-error">${escapeHtml(data.error)}</p>
       `;
     }
 
     const phonetic = data.phonetic
-      ? `<span class="qd-phonetic">${escapeHtml(data.phonetic)}</span>`
+      ? `<span class="glimpse-phonetic">${escapeHtml(data.phonetic)}</span>`
       : "";
 
     const meanings = data.meanings
@@ -86,14 +86,14 @@
         const defs = m.definitions
           .map((d) => {
             const example = d.example
-              ? `<p class="qd-example">"${escapeHtml(d.example)}"</p>`
+              ? `<p class="glimpse-example">"${escapeHtml(d.example)}"</p>`
               : "";
             return `<li>${escapeHtml(d.definition)}${example}</li>`;
           })
           .join("");
         return `
-          <div class="qd-meaning">
-            <span class="qd-pos">${escapeHtml(m.partOfSpeech)}</span>
+          <div class="glimpse-meaning">
+            <span class="glimpse-pos">${escapeHtml(m.partOfSpeech)}</span>
             <ol>${defs}</ol>
           </div>
         `;
@@ -101,12 +101,12 @@
       .join("");
 
     return `
-      <div class="qd-header">
+      <div class="glimpse-header">
         <div>
-          <span class="qd-word">${escapeHtml(data.word)}</span>
+          <span class="glimpse-word">${escapeHtml(data.word)}</span>
           ${phonetic}
         </div>
-        <button class="qd-close" aria-label="Close">&times;</button>
+        <button class="glimpse-close" aria-label="Close">&times;</button>
       </div>
       ${meanings}
     `;
@@ -114,11 +114,11 @@
 
   function renderLoading(word) {
     return `
-      <div class="qd-header">
-        <span class="qd-word">${escapeHtml(word)}</span>
-        <button class="qd-close" aria-label="Close">&times;</button>
+      <div class="glimpse-header">
+        <span class="glimpse-word">${escapeHtml(word)}</span>
+        <button class="glimpse-close" aria-label="Close">&times;</button>
       </div>
-      <p class="qd-loading">Looking up definition...</p>
+      <p class="glimpse-loading">Looking up definition...</p>
     `;
   }
 
@@ -196,7 +196,7 @@
 
   function getPopupStyles() {
     return `
-      .qd-popup {
+      .glimpse-popup {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         font-size: 14px;
         line-height: 1.5;
@@ -208,15 +208,15 @@
         padding: 12px 16px;
         max-width: 360px;
         min-width: 200px;
-        animation: qd-fadein 0.15s ease-out;
+        animation: glimpse-fadein 0.15s ease-out;
       }
 
-      @keyframes qd-fadein {
+      @keyframes glimpse-fadein {
         from { opacity: 0; transform: translateY(4px); }
         to { opacity: 1; transform: translateY(0); }
       }
 
-      .qd-header {
+      .glimpse-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
@@ -224,20 +224,20 @@
         margin-bottom: 8px;
       }
 
-      .qd-word {
+      .glimpse-word {
         font-size: 18px;
         font-weight: 600;
         color: #111;
       }
 
-      .qd-phonetic {
+      .glimpse-phonetic {
         margin-left: 8px;
         font-size: 14px;
         color: #666;
         font-style: italic;
       }
 
-      .qd-close {
+      .glimpse-close {
         background: none;
         border: none;
         font-size: 20px;
@@ -248,19 +248,19 @@
         flex-shrink: 0;
       }
 
-      .qd-close:hover {
+      .glimpse-close:hover {
         color: #333;
       }
 
-      .qd-meaning {
+      .glimpse-meaning {
         margin-bottom: 8px;
       }
 
-      .qd-meaning:last-child {
+      .glimpse-meaning:last-child {
         margin-bottom: 0;
       }
 
-      .qd-pos {
+      .glimpse-pos {
         display: inline-block;
         font-size: 12px;
         font-weight: 600;
@@ -272,24 +272,24 @@
         text-transform: lowercase;
       }
 
-      .qd-meaning ol {
+      .glimpse-meaning ol {
         margin: 4px 0 0 0;
         padding-left: 20px;
       }
 
-      .qd-meaning li {
+      .glimpse-meaning li {
         margin-bottom: 4px;
         color: #333;
       }
 
-      .qd-example {
+      .glimpse-example {
         margin: 2px 0 0 0;
         font-style: italic;
         color: #777;
         font-size: 13px;
       }
 
-      .qd-error, .qd-loading {
+      .glimpse-error, .glimpse-loading {
         margin: 0;
         color: #888;
         font-style: italic;
