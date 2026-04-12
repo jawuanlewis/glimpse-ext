@@ -1,6 +1,12 @@
 (() => {
   const POPUP_ID = "glimpse-popup";
   let popupHost = null;
+  let currentTheme = "dark";
+
+  // Load saved theme preference
+  chrome.storage.sync.get("theme", (result) => {
+    if (result.theme) currentTheme = result.theme;
+  });
 
   // --- Popup lifecycle ---
 
@@ -24,7 +30,7 @@
     shadow.appendChild(style);
 
     const container = document.createElement("div");
-    container.className = "glimpse-popup";
+    container.className = `glimpse-popup ${currentTheme === "dark" ? "glimpse-dark" : ""}`;
     container.innerHTML = html;
     shadow.appendChild(container);
 
@@ -37,6 +43,34 @@
       closeBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         removePopup();
+      });
+    }
+
+    // Theme toggle
+    const themeBtn = shadow.querySelector(".glimpse-theme-toggle");
+    if (themeBtn) {
+      themeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        currentTheme = currentTheme === "dark" ? "light" : "dark";
+        chrome.storage.sync.set({ theme: currentTheme });
+        container.classList.toggle("glimpse-dark", currentTheme === "dark");
+        themeBtn.textContent = currentTheme === "dark" ? "\u2600" : "\u263E";
+        themeBtn.setAttribute(
+          "aria-label",
+          currentTheme === "dark"
+            ? "Switch to light mode"
+            : "Switch to dark mode",
+        );
+      });
+    }
+
+    // Audio play button
+    const audioBtn = shadow.querySelector(".glimpse-audio-btn");
+    if (audioBtn) {
+      audioBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const url = audioBtn.dataset.audioUrl;
+        if (url) new Audio(url).play();
       });
     }
   }
@@ -68,10 +102,18 @@
 
   function renderDefinition(data) {
     if (data.error) {
+      const themeIcon = currentTheme === "dark" ? "\u2600" : "\u263E";
+      const themeLabel =
+        currentTheme === "dark"
+          ? "Switch to light mode"
+          : "Switch to dark mode";
       return `
         <div class="glimpse-header">
           <span class="glimpse-word">Not found</span>
-          <button class="glimpse-close" aria-label="Close">&times;</button>
+          <div class="glimpse-header-actions">
+            <button class="glimpse-theme-toggle" aria-label="${themeLabel}">${themeIcon}</button>
+            <button class="glimpse-close" aria-label="Close">&times;</button>
+          </div>
         </div>
         <p class="glimpse-error">${escapeHtml(data.error)}</p>
       `;
@@ -80,6 +122,14 @@
     const phonetic = data.phonetic
       ? `<span class="glimpse-phonetic">${escapeHtml(data.phonetic)}</span>`
       : "";
+
+    const audioBtn = data.audioUrl
+      ? `<button class="glimpse-audio-btn" data-audio-url="${escapeHtml(data.audioUrl)}" aria-label="Play pronunciation">&#9655;</button>`
+      : "";
+
+    const themeIcon = currentTheme === "dark" ? "\u2600" : "\u263E";
+    const themeLabel =
+      currentTheme === "dark" ? "Switch to light mode" : "Switch to dark mode";
 
     const meanings = data.meanings
       .map((m) => {
@@ -105,18 +155,28 @@
         <div>
           <span class="glimpse-word">${escapeHtml(data.word)}</span>
           ${phonetic}
+          ${audioBtn}
         </div>
-        <button class="glimpse-close" aria-label="Close">&times;</button>
+        <div class="glimpse-header-actions">
+          <button class="glimpse-theme-toggle" aria-label="${themeLabel}">${themeIcon}</button>
+          <button class="glimpse-close" aria-label="Close">&times;</button>
+        </div>
       </div>
       ${meanings}
     `;
   }
 
   function renderLoading(word) {
+    const themeIcon = currentTheme === "dark" ? "\u2600" : "\u263E";
+    const themeLabel =
+      currentTheme === "dark" ? "Switch to light mode" : "Switch to dark mode";
     return `
       <div class="glimpse-header">
         <span class="glimpse-word">${escapeHtml(word)}</span>
-        <button class="glimpse-close" aria-label="Close">&times;</button>
+        <div class="glimpse-header-actions">
+          <button class="glimpse-theme-toggle" aria-label="${themeLabel}">${themeIcon}</button>
+          <button class="glimpse-close" aria-label="Close">&times;</button>
+        </div>
       </div>
       <p class="glimpse-loading">Looking up definition...</p>
     `;
@@ -237,6 +297,13 @@
         font-style: italic;
       }
 
+      .glimpse-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
       .glimpse-close {
         background: none;
         border: none;
@@ -249,6 +316,42 @@
       }
 
       .glimpse-close:hover {
+        color: #333;
+      }
+
+      .glimpse-theme-toggle {
+        background: none;
+        border: none;
+        font-size: 16px;
+        cursor: pointer;
+        color: #999;
+        padding: 0 4px;
+        line-height: 1;
+      }
+
+      .glimpse-theme-toggle:hover {
+        color: #333;
+      }
+
+      .glimpse-audio-btn {
+        background: none;
+        border: 1px solid #ccc;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        font-size: 12px;
+        cursor: pointer;
+        color: #666;
+        padding: 0;
+        margin-left: 6px;
+        line-height: 22px;
+        text-align: center;
+        vertical-align: middle;
+        flex-shrink: 0;
+      }
+
+      .glimpse-audio-btn:hover {
+        background: #f0f0f0;
         color: #333;
       }
 
@@ -293,6 +396,60 @@
         margin: 0;
         color: #888;
         font-style: italic;
+      }
+
+      /* Dark theme */
+      .glimpse-dark {
+        color: #e0e0e0;
+        background: #1e1e1e;
+        border-color: #333;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      }
+
+      .glimpse-dark .glimpse-word {
+        color: #f0f0f0;
+      }
+
+      .glimpse-dark .glimpse-phonetic {
+        color: #aaa;
+      }
+
+      .glimpse-dark .glimpse-close,
+      .glimpse-dark .glimpse-theme-toggle {
+        color: #888;
+      }
+
+      .glimpse-dark .glimpse-close:hover,
+      .glimpse-dark .glimpse-theme-toggle:hover {
+        color: #ddd;
+      }
+
+      .glimpse-dark .glimpse-pos {
+        color: #7cc88a;
+        background: #1a3a1f;
+      }
+
+      .glimpse-dark .glimpse-meaning li {
+        color: #ccc;
+      }
+
+      .glimpse-dark .glimpse-example {
+        color: #999;
+      }
+
+      .glimpse-dark .glimpse-error,
+      .glimpse-dark .glimpse-loading {
+        color: #999;
+      }
+
+      .glimpse-dark .glimpse-audio-btn {
+        color: #aaa;
+        border-color: #555;
+      }
+
+      .glimpse-dark .glimpse-audio-btn:hover {
+        background: #333;
+        color: #ddd;
       }
     `;
   }

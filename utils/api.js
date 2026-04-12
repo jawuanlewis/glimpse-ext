@@ -33,6 +33,8 @@ const DictionaryAPI = {
     const phonetic =
       entry.phonetic || entry.phonetics?.find((p) => p.text)?.text || null;
 
+    const audioUrl = entry.phonetics?.find((p) => p.audio)?.audio || null;
+
     const meanings = (entry.meanings || []).map((m) => ({
       partOfSpeech: m.partOfSpeech,
       definitions: (m.definitions || []).slice(0, 2).map((d) => ({
@@ -44,6 +46,7 @@ const DictionaryAPI = {
     return {
       word: entry.word,
       phonetic,
+      audioUrl,
       meanings,
     };
   },

@@ -18,7 +18,7 @@ glimpse-ext/
 ├── content.js          # Content script — word selection, popup lifecycle & rendering
 ├── popup/
 │   ├── popup.html      # Toolbar popup UI (shown when clicking the extension icon)
-│   └── popup.js        # Reads manifest version and injects it into the popup
+│   └── popup.js        # Toolbar popup logic — version display and theme toggle
 ├── utils/
 │   └── api.js          # DictionaryAPI object — fetch + normalize API responses
 └── icons/              # Extension icons (16, 48, 128px)
@@ -36,9 +36,9 @@ glimpse-ext/
 
 There is one message type:
 
-| Type          | Direction            | Payload         | Response                                      |
-| ------------- | -------------------- | --------------- | --------------------------------------------- |
-| `LOOKUP_WORD` | content → background | `{ word: str }` | `{ word, phonetic, meanings }` or `{ error }` |
+| Type          | Direction            | Payload         | Response                                                |
+| ------------- | -------------------- | --------------- | ------------------------------------------------------- |
+| `LOOKUP_WORD` | content → background | `{ word: str }` | `{ word, phonetic, audioUrl, meanings }` or `{ error }` |
 
 `background.js` returns `true` from `onMessage` to keep the channel open for async responses.
 
@@ -46,7 +46,7 @@ There is one message type:
 
 ```js
 // Success
-{ word: string, phonetic: string|null, meanings: [{ partOfSpeech, definitions: [{ definition, example|null }] }] }
+{ word: string, phonetic: string|null, audioUrl: string|null, meanings: [{ partOfSpeech, definitions: [{ definition, example|null }] }] }
 
 // Error
 { error: string }
@@ -76,4 +76,6 @@ There is one message type:
 - **Popup positioning accounts for viewport edges** — `positionPopup()` adjusts left/top to prevent the popup from clipping off the right side or bottom of the viewport. Keep this logic intact when changing popup dimensions.
 - **Word validation is strict** — `isValidWord` only accepts `[a-zA-Z'-]` with a max length of 50. Multi-word selections and non-English text are intentionally ignored.
 - **Service worker scope** — `background.js` cannot access the DOM. `utils/api.js` uses `fetch` (available in service workers), not any browser UI API.
-- **Toolbar popup (`popup/`) is informational only** — it displays the extension name and version. It does not interact with the content script or background worker.
+- **Toolbar popup (`popup/`) is informational + settings** — it displays the extension name, version, and a theme toggle. It does not interact with the content script or background worker directly, but shares the theme preference via `chrome.storage.sync`.
+- **Theme preference** — stored in `chrome.storage.sync` under the key `"theme"` (`"dark"` or `"light"`). Dark is the default. Both the content script popup and the toolbar popup read/write this key, so changes in either take effect everywhere.
+- **Audio pronunciation** — `DictionaryAPI.normalize()` surfaces an `audioUrl` from the API's `phonetics` array. `content.js` renders a play button when an audio URL is available and plays it via `new Audio(url).play()`.

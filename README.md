@@ -30,8 +30,10 @@ Chrome extension that shows instant word definitions on highlight — powered by
 Highlight any word on a webpage and Glimpse displays a clean popup with:
 
 - **Word** and **phonetic** pronunciation
+- **Audio pronunciation** — play button when audio is available from the dictionary API
 - **Part of speech** labels
 - **Top definitions** with usage examples (when available)
+- **Dark / Light theme** — toggle in the popup or toolbar; dark mode by default, preference syncs across devices via Chrome storage
 
 The popup appears near the selected text and dismisses when you click elsewhere or press Escape.
 
