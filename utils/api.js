@@ -4,7 +4,7 @@ const DictionaryAPI = {
   /**
    * Look up a word and return a normalized result.
    * @param {string} word
-   * @returns {Promise<{word: string, phonetic: string|null, meanings: Array<{partOfSpeech: string, definitions: Array<{definition: string, example: string|null}>}>} | {error: string}>}
+   * @returns {Promise<{word: string, phonetic: string|null, audioUrl: string|null, meanings: Array<{partOfSpeech: string, definitions: Array<{definition: string, example: string|null}>}>} | {error: string}>}
    */
   async lookup(word) {
     try {
@@ -30,8 +30,14 @@ const DictionaryAPI = {
    * Normalize the raw API response into a consistent shape.
    */
   normalize(entry) {
-    const phonetic =
-      entry.phonetic || entry.phonetics?.find((p) => p.text)?.text || null;
+    // Single pass over phonetics — collect text and audio URL together.
+    let phonetic = entry.phonetic || null;
+    let audioUrl = null;
+    for (const p of entry.phonetics ?? []) {
+      if (!phonetic && p.text) phonetic = p.text;
+      if (!audioUrl && p.audio) audioUrl = p.audio;
+      if (phonetic && audioUrl) break;
+    }
 
     const meanings = (entry.meanings || []).map((m) => ({
       partOfSpeech: m.partOfSpeech,
@@ -44,6 +50,7 @@ const DictionaryAPI = {
     return {
       word: entry.word,
       phonetic,
+      audioUrl,
       meanings,
     };
   },

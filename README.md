@@ -30,8 +30,10 @@ Chrome extension that shows instant word definitions on highlight — powered by
 Highlight any word on a webpage and Glimpse displays a clean popup with:
 
 - **Word** and **phonetic** pronunciation
+- **Audio pronunciation** — play button when audio is available from the dictionary API
 - **Part of speech** labels
 - **Top definitions** with usage examples (when available)
+- **Dark / Light theme** — toggle in the popup or toolbar; dark mode by default, preference syncs across devices via Chrome storage
 
 The popup appears near the selected text and dismisses when you click elsewhere or press Escape.
 
@@ -40,11 +42,13 @@ The popup appears near the selected text and dismisses when you click elsewhere 
 ```text
 glimpse-ext/
 ├── manifest.json       # Extension config (Manifest V3)
-├── background.js       # Service worker — handles API requests
-├── content.js          # Content script — word selection & popup rendering
+├── background.js       # Service worker — API requests & audio playback routing
+├── content.js          # Content script — word selection, popup lifecycle & rendering
+├── offscreen.html      # Offscreen document shell (audio playback outside host-page CSP)
+├── offscreen.js        # Offscreen document logic — plays pronunciation audio
 ├── popup/
 │   ├── popup.html      # Toolbar popup UI
-│   └── popup.js        # Toolbar popup logic
+│   └── popup.js        # Toolbar popup — version display & theme toggle
 ├── icons/              # Extension icons (16, 48, 128px)
 └── utils/
     └── api.js          # Dictionary API client

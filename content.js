@@ -1,6 +1,20 @@
 (() => {
   const POPUP_ID = "glimpse-popup";
   let popupHost = null;
+  let currentTheme = "dark";
+
+  // Styles are static — compute once rather than on every popup creation.
+  const POPUP_STYLES = getPopupStyles();
+
+  // SVG icons — inline so rendering is pixel-exact and independent of the host page's font stack.
+  const ICON_PLAY = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 10" width="8" height="10" aria-hidden="true" style="margin-left:2px"><polygon points="0,0 8,5 0,10" fill="currentColor"/></svg>`;
+  const ICON_MOON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/></svg>`;
+  const ICON_SUN = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>`;
+
+  // Load saved theme preference
+  chrome.storage.sync.get("theme", (result) => {
+    if (result.theme) currentTheme = result.theme;
+  });
 
   // --- Popup lifecycle ---
 
@@ -20,13 +34,19 @@
 
     // Inject styles into shadow DOM
     const style = document.createElement("style");
-    style.textContent = getPopupStyles();
+    style.textContent = POPUP_STYLES;
     shadow.appendChild(style);
 
     const container = document.createElement("div");
-    container.className = "glimpse-popup";
+    container.className = `glimpse-popup ${currentTheme === "dark" ? "glimpse-dark" : ""}`;
     container.innerHTML = html;
     shadow.appendChild(container);
+
+    // Set absolute positioning before appending so the element shrink-wraps
+    // to its shadow content — otherwise getBoundingClientRect() in
+    // positionPopup() would measure the full body width as a block div.
+    popupHost.style.position = "absolute";
+    popupHost.style.zIndex = "2147483647";
 
     document.body.appendChild(popupHost);
     positionPopup(popupHost, rect);
@@ -37,6 +57,34 @@
       closeBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         removePopup();
+      });
+    }
+
+    // Theme toggle
+    const themeBtn = shadow.querySelector(".glimpse-theme-toggle");
+    if (themeBtn) {
+      themeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        currentTheme = currentTheme === "dark" ? "light" : "dark";
+        chrome.storage.sync.set({ theme: currentTheme });
+        container.classList.toggle("glimpse-dark", currentTheme === "dark");
+        themeBtn.innerHTML = currentTheme === "dark" ? ICON_SUN : ICON_MOON;
+        themeBtn.setAttribute(
+          "aria-label",
+          currentTheme === "dark"
+            ? "Switch to light mode"
+            : "Switch to dark mode",
+        );
+      });
+    }
+
+    // Audio play button
+    const audioBtn = shadow.querySelector(".glimpse-audio-btn");
+    if (audioBtn) {
+      audioBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const url = audioBtn.dataset.audioUrl;
+        if (url) chrome.runtime.sendMessage({ type: "PLAY_AUDIO", url });
       });
     }
   }
@@ -58,20 +106,27 @@
       top = rect.top + window.scrollY - popupRect.height - MARGIN;
     }
 
-    el.style.position = "absolute";
     el.style.top = `${Math.max(0, top)}px`;
     el.style.left = `${Math.max(0, left)}px`;
-    el.style.zIndex = "2147483647";
   }
 
   // --- Rendering ---
 
   function renderDefinition(data) {
+    const themeIcon = currentTheme === "dark" ? ICON_SUN : ICON_MOON;
+    const themeLabel =
+      currentTheme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+    const headerActions = `
+      <div class="glimpse-header-actions">
+        <button class="glimpse-theme-toggle" aria-label="${themeLabel}">${themeIcon}</button>
+        <button class="glimpse-close" aria-label="Close">&times;</button>
+      </div>`;
+
     if (data.error) {
       return `
         <div class="glimpse-header">
           <span class="glimpse-word">Not found</span>
-          <button class="glimpse-close" aria-label="Close">&times;</button>
+          ${headerActions}
         </div>
         <p class="glimpse-error">${escapeHtml(data.error)}</p>
       `;
@@ -79,6 +134,10 @@
 
     const phonetic = data.phonetic
       ? `<span class="glimpse-phonetic">${escapeHtml(data.phonetic)}</span>`
+      : "";
+
+    const audioBtn = data.audioUrl
+      ? `<button class="glimpse-audio-btn" data-audio-url="${escapeHtml(data.audioUrl)}" aria-label="Play pronunciation">${ICON_PLAY}</button>`
       : "";
 
     const meanings = data.meanings
@@ -105,20 +164,11 @@
         <div>
           <span class="glimpse-word">${escapeHtml(data.word)}</span>
           ${phonetic}
+          ${audioBtn}
         </div>
-        <button class="glimpse-close" aria-label="Close">&times;</button>
+        ${headerActions}
       </div>
       ${meanings}
-    `;
-  }
-
-  function renderLoading(word) {
-    return `
-      <div class="glimpse-header">
-        <span class="glimpse-word">${escapeHtml(word)}</span>
-        <button class="glimpse-close" aria-label="Close">&times;</button>
-      </div>
-      <p class="glimpse-loading">Looking up definition...</p>
     `;
   }
 
@@ -157,9 +207,6 @@
 
       const rect = getSelectionRect();
       if (!rect) return;
-
-      // Show loading state
-      createPopup(renderLoading(text), rect);
 
       // Request definition from background
       chrome.runtime.sendMessage(
@@ -237,6 +284,13 @@
         font-style: italic;
       }
 
+      .glimpse-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
       .glimpse-close {
         background: none;
         border: none;
@@ -249,6 +303,44 @@
       }
 
       .glimpse-close:hover {
+        color: #333;
+      }
+
+      .glimpse-theme-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        color: #999;
+        padding: 0;
+      }
+
+      .glimpse-theme-toggle:hover {
+        color: #333;
+      }
+
+      .glimpse-audio-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: 1px solid #ccc;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        cursor: pointer;
+        color: #666;
+        padding: 0;
+        margin-left: 6px;
+        flex-shrink: 0;
+      }
+
+      .glimpse-audio-btn:hover {
+        background: #f0f0f0;
         color: #333;
       }
 
@@ -289,10 +381,63 @@
         font-size: 13px;
       }
 
-      .glimpse-error, .glimpse-loading {
+      .glimpse-error {
         margin: 0;
         color: #888;
         font-style: italic;
+      }
+
+      /* Dark theme */
+      .glimpse-dark {
+        color: #e0e0e0;
+        background: #1e1e1e;
+        border-color: #333;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      }
+
+      .glimpse-dark .glimpse-word {
+        color: #f0f0f0;
+      }
+
+      .glimpse-dark .glimpse-phonetic {
+        color: #aaa;
+      }
+
+      .glimpse-dark .glimpse-close,
+      .glimpse-dark .glimpse-theme-toggle {
+        color: #888;
+      }
+
+      .glimpse-dark .glimpse-close:hover,
+      .glimpse-dark .glimpse-theme-toggle:hover {
+        color: #ddd;
+      }
+
+      .glimpse-dark .glimpse-pos {
+        color: #7cc88a;
+        background: #1a3a1f;
+      }
+
+      .glimpse-dark .glimpse-meaning li {
+        color: #ccc;
+      }
+
+      .glimpse-dark .glimpse-example {
+        color: #999;
+      }
+
+      .glimpse-dark .glimpse-error {
+        color: #999;
+      }
+
+      .glimpse-dark .glimpse-audio-btn {
+        color: #aaa;
+        border-color: #555;
+      }
+
+      .glimpse-dark .glimpse-audio-btn:hover {
+        background: #333;
+        color: #ddd;
       }
     `;
   }

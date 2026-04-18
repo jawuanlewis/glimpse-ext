@@ -12,6 +12,14 @@
         padding: 16px;
         margin: 0;
         color: #1a1a1a;
+        transition:
+          background 0.2s,
+          color 0.2s;
+      }
+
+      body.dark {
+        background: #1e1e1e;
+        color: #e0e0e0;
       }
 
       h1 {
@@ -31,12 +39,59 @@
         margin: 0;
         line-height: 1.5;
       }
+
+      body.dark p {
+        color: #aaa;
+      }
+
+      .theme-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 14px;
+        padding-top: 10px;
+        border-top: 1px solid #e0e0e0;
+      }
+
+      body.dark .theme-row {
+        border-top-color: #333;
+      }
+
+      .theme-row span {
+        font-size: 13px;
+      }
+
+      .theme-toggle-btn {
+        background: none;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 3px 10px;
+        font-size: 13px;
+        cursor: pointer;
+        color: inherit;
+      }
+
+      .theme-toggle-btn:hover {
+        background: #f0f0f0;
+      }
+
+      body.dark .theme-toggle-btn {
+        border-color: #555;
+      }
+
+      body.dark .theme-toggle-btn:hover {
+        background: #333;
+      }
     </style>
   </head>
   <body>
     <h1>Glimpse</h1>
     <p class="version" id="version"></p>
     <p>Highlight any word on a webpage to see its definition instantly.</p>
+    <div class="theme-row">
+      <span>Theme</span>
+      <button class="theme-toggle-btn" id="theme-toggle">Dark</button>
+    </div>
     <script src="popup.js"></script>
   </body>
 </html>
