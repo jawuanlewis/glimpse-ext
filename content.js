@@ -3,6 +3,13 @@
   let popupHost = null;
   let currentTheme = "dark";
 
+  // SVG icons — inline so geometry and centering are pixel-exact regardless of OS font.
+  // The play triangle is a right-pointing polygon; the moon uses the standard Lucide crescent path.
+  // The sun (☀) is Unicode because it's symmetric and renders well as-is.
+  const ICON_PLAY = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 10" width="8" height="10" aria-hidden="true" style="margin-left:2px"><polygon points="0,0 8,5 0,10" fill="currentColor"/></svg>`;
+  const ICON_MOON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/></svg>`;
+  const ICON_SUN = "\u2600";
+
   // Load saved theme preference
   chrome.storage.sync.get("theme", (result) => {
     if (result.theme) currentTheme = result.theme;
@@ -60,7 +67,7 @@
         currentTheme = currentTheme === "dark" ? "light" : "dark";
         chrome.storage.sync.set({ theme: currentTheme });
         container.classList.toggle("glimpse-dark", currentTheme === "dark");
-        themeBtn.textContent = currentTheme === "dark" ? "\u2600" : "\u263E";
+        themeBtn.innerHTML = currentTheme === "dark" ? ICON_SUN : ICON_MOON;
         themeBtn.setAttribute(
           "aria-label",
           currentTheme === "dark"
@@ -106,7 +113,7 @@
 
   function renderDefinition(data) {
     if (data.error) {
-      const themeIcon = currentTheme === "dark" ? "\u2600" : "\u263E";
+      const themeIcon = currentTheme === "dark" ? ICON_SUN : ICON_MOON;
       const themeLabel =
         currentTheme === "dark"
           ? "Switch to light mode"
@@ -128,10 +135,10 @@
       : "";
 
     const audioBtn = data.audioUrl
-      ? `<button class="glimpse-audio-btn" data-audio-url="${escapeHtml(data.audioUrl)}" aria-label="Play pronunciation">&#9655;</button>`
+      ? `<button class="glimpse-audio-btn" data-audio-url="${escapeHtml(data.audioUrl)}" aria-label="Play pronunciation">${ICON_PLAY}</button>`
       : "";
 
-    const themeIcon = currentTheme === "dark" ? "\u2600" : "\u263E";
+    const themeIcon = currentTheme === "dark" ? ICON_SUN : ICON_MOON;
     const themeLabel =
       currentTheme === "dark" ? "Switch to light mode" : "Switch to dark mode";
 
@@ -171,7 +178,7 @@
   }
 
   function renderLoading(word) {
-    const themeIcon = currentTheme === "dark" ? "\u2600" : "\u263E";
+    const themeIcon = currentTheme === "dark" ? ICON_SUN : ICON_MOON;
     const themeLabel =
       currentTheme === "dark" ? "Switch to light mode" : "Switch to dark mode";
     return `
@@ -324,13 +331,16 @@
       }
 
       .glimpse-theme-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         background: none;
         border: none;
-        font-size: 16px;
+        width: 24px;
+        height: 24px;
         cursor: pointer;
         color: #999;
-        padding: 0 4px;
-        line-height: 1;
+        padding: 0;
       }
 
       .glimpse-theme-toggle:hover {
@@ -338,19 +348,18 @@
       }
 
       .glimpse-audio-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         background: none;
         border: 1px solid #ccc;
         border-radius: 50%;
         width: 22px;
         height: 22px;
-        font-size: 12px;
         cursor: pointer;
         color: #666;
         padding: 0;
         margin-left: 6px;
-        line-height: 22px;
-        text-align: center;
-        vertical-align: middle;
         flex-shrink: 0;
       }
 
