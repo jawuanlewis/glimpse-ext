@@ -24,7 +24,8 @@ async function ensureOffscreenDocument() {
           return chrome.offscreen.createDocument({
             url: "offscreen.html",
             reasons: [chrome.offscreen.Reason.AUDIO_PLAYBACK],
-            justification: "Play word pronunciation audio from the dictionary API.",
+            justification:
+              "Play word pronunciation audio from the dictionary API.",
           });
         }
       })

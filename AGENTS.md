@@ -63,6 +63,7 @@ glimpse-ext/
 - `utils/api.js` is loaded in `background.js` via `importScripts("utils/api.js")` and exposes a global `DictionaryAPI` object
 - `content.js` is wrapped in an IIFE (`(() => { ... })()`) to avoid polluting the global scope of host pages
 - All user-generated strings rendered into HTML go through `escapeHtml()` (creates a temporary `div`, sets `textContent`, reads `innerHTML`) — do not bypass this
+- **Formatter:** Prettier (`pnpm format`). Run before committing. Config in `.prettierrc`; `node_modules/` and `icons/` are ignored. `pnpm format:check` can be used to verify without writing.
 
 ## Loading the Extension
 
