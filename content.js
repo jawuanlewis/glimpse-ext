@@ -1,6 +1,7 @@
 (() => {
   const POPUP_ID = "glimpse-popup";
   let popupHost = null;
+  let shadowContainer = null; // kept in scope so the storage listener can reach it
   let currentTheme = "dark";
 
   // Styles are static — compute once rather than on every popup creation.
@@ -16,12 +17,31 @@
     if (result.theme) currentTheme = result.theme;
   });
 
+  // Keep an open popup in sync when the theme is changed from the toolbar popup.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "sync" || !changes.theme) return;
+    currentTheme = changes.theme.newValue;
+    if (!shadowContainer) return;
+    shadowContainer.classList.toggle("glimpse-dark", currentTheme === "dark");
+    const themeBtn = shadowContainer.querySelector(".glimpse-theme-toggle");
+    if (themeBtn) {
+      themeBtn.innerHTML = currentTheme === "dark" ? ICON_SUN : ICON_MOON;
+      themeBtn.setAttribute(
+        "aria-label",
+        currentTheme === "dark"
+          ? "Switch to light mode"
+          : "Switch to dark mode",
+      );
+    }
+  });
+
   // --- Popup lifecycle ---
 
   function removePopup() {
     if (popupHost) {
       popupHost.remove();
       popupHost = null;
+      shadowContainer = null;
     }
   }
 
@@ -37,10 +57,11 @@
     style.textContent = POPUP_STYLES;
     shadow.appendChild(style);
 
-    const container = document.createElement("div");
-    container.className = `glimpse-popup ${currentTheme === "dark" ? "glimpse-dark" : ""}`;
-    container.innerHTML = html;
-    shadow.appendChild(container);
+    shadowContainer = document.createElement("div");
+    shadowContainer.className = `glimpse-popup ${currentTheme === "dark" ? "glimpse-dark" : ""}`;
+    shadowContainer.innerHTML = html;
+    shadow.appendChild(shadowContainer);
+    const container = shadowContainer;
 
     // Set absolute positioning before appending so the element shrink-wraps
     // to its shadow content — otherwise getBoundingClientRect() in
