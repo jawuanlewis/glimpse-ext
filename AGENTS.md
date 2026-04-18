@@ -16,6 +16,8 @@ glimpse-ext/
 ├── manifest.json       # Extension config (Manifest V3)
 ├── background.js       # Service worker — receives messages, proxies API calls
 ├── content.js          # Content script — word selection, popup lifecycle & rendering
+├── offscreen.html      # Offscreen document shell (loaded by background for audio playback)
+├── offscreen.js        # Offscreen document — plays pronunciation audio outside host-page CSP
 ├── popup/
 │   ├── popup.html      # Toolbar popup UI (shown when clicking the extension icon)
 │   └── popup.js        # Toolbar popup logic — version display and theme toggle
@@ -34,11 +36,11 @@ glimpse-ext/
 
 ## Message Passing
 
-There is one message type:
-
-| Type          | Direction            | Payload         | Response                                                |
-| ------------- | -------------------- | --------------- | ------------------------------------------------------- |
-| `LOOKUP_WORD` | content → background | `{ word: str }` | `{ word, phonetic, audioUrl, meanings }` or `{ error }` |
+| Type                  | Direction                  | Payload         | Response                                                |
+| --------------------- | -------------------------- | --------------- | ------------------------------------------------------- |
+| `LOOKUP_WORD`         | content → background       | `{ word: str }` | `{ word, phonetic, audioUrl, meanings }` or `{ error }` |
+| `PLAY_AUDIO`          | content → background       | `{ url: str }`  | none                                                    |
+| `PLAY_AUDIO_OFFSCREEN`| background → offscreen doc | `{ url: str }`  | none                                                    |
 
 `background.js` returns `true` from `onMessage` to keep the channel open for async responses.
 
@@ -78,4 +80,5 @@ There is one message type:
 - **Service worker scope** — `background.js` cannot access the DOM. `utils/api.js` uses `fetch` (available in service workers), not any browser UI API.
 - **Toolbar popup (`popup/`) is informational + settings** — it displays the extension name, version, and a theme toggle. It does not interact with the content script or background worker directly, but shares the theme preference via `chrome.storage.sync`.
 - **Theme preference** — stored in `chrome.storage.sync` under the key `"theme"` (`"dark"` or `"light"`). Dark is the default. Both the content script popup and the toolbar popup read/write this key, so changes in either take effect everywhere.
-- **Audio pronunciation** — `DictionaryAPI.normalize()` surfaces an `audioUrl` from the API's `phonetics` array. `content.js` renders a play button when an audio URL is available and plays it via `new Audio(url).play()`.
+- **Audio pronunciation** — `DictionaryAPI.normalize()` surfaces an `audioUrl` from the API's `phonetics` array. `content.js` renders a play button and sends a `PLAY_AUDIO` message to `background.js`, which delegates to an offscreen document. Do **not** call `new Audio().play()` directly from `content.js` — host pages' CSPs block media from external domains, and content scripts are subject to them.
+- **Popup host positioning** — `popupHost.style.position` must be set to `"absolute"` *before* appending to the DOM. As a block element, an unstyled host div stretches to the body width; measuring it with `getBoundingClientRect()` while still `position: static` returns the full page width, causing the right-edge guard to snap the popup to the left edge of the screen.

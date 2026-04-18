@@ -34,6 +34,12 @@
     container.innerHTML = html;
     shadow.appendChild(container);
 
+    // Set absolute positioning before appending so the element shrink-wraps
+    // to its shadow content — otherwise getBoundingClientRect() in
+    // positionPopup() would measure the full body width as a block div.
+    popupHost.style.position = "absolute";
+    popupHost.style.zIndex = "2147483647";
+
     document.body.appendChild(popupHost);
     positionPopup(popupHost, rect);
 
@@ -70,7 +76,7 @@
       audioBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         const url = audioBtn.dataset.audioUrl;
-        if (url) new Audio(url).play();
+        if (url) chrome.runtime.sendMessage({ type: "PLAY_AUDIO", url });
       });
     }
   }
@@ -92,10 +98,8 @@
       top = rect.top + window.scrollY - popupRect.height - MARGIN;
     }
 
-    el.style.position = "absolute";
     el.style.top = `${Math.max(0, top)}px`;
     el.style.left = `${Math.max(0, left)}px`;
-    el.style.zIndex = "2147483647";
   }
 
   // --- Rendering ---
