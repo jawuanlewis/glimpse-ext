@@ -177,22 +177,6 @@
     `;
   }
 
-  function renderLoading(word) {
-    const themeIcon = currentTheme === "dark" ? ICON_SUN : ICON_MOON;
-    const themeLabel =
-      currentTheme === "dark" ? "Switch to light mode" : "Switch to dark mode";
-    return `
-      <div class="glimpse-header">
-        <span class="glimpse-word">${escapeHtml(word)}</span>
-        <div class="glimpse-header-actions">
-          <button class="glimpse-theme-toggle" aria-label="${themeLabel}">${themeIcon}</button>
-          <button class="glimpse-close" aria-label="Close">&times;</button>
-        </div>
-      </div>
-      <p class="glimpse-loading">Looking up definition...</p>
-    `;
-  }
-
   // --- Helpers ---
 
   function escapeHtml(str) {
@@ -228,9 +212,6 @@
 
       const rect = getSelectionRect();
       if (!rect) return;
-
-      // Show loading state
-      createPopup(renderLoading(text), rect);
 
       // Request definition from background
       chrome.runtime.sendMessage(
@@ -405,7 +386,7 @@
         font-size: 13px;
       }
 
-      .glimpse-error, .glimpse-loading {
+      .glimpse-error {
         margin: 0;
         color: #888;
         font-style: italic;
@@ -450,8 +431,7 @@
         color: #999;
       }
 
-      .glimpse-dark .glimpse-error,
-      .glimpse-dark .glimpse-loading {
+      .glimpse-dark .glimpse-error {
         color: #999;
       }
 
