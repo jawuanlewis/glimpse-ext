@@ -3,12 +3,13 @@
   let popupHost = null;
   let currentTheme = "dark";
 
-  // SVG icons — inline so geometry and centering are pixel-exact regardless of OS font.
-  // The play triangle is a right-pointing polygon; the moon uses the standard Lucide crescent path.
-  // The sun (☀) is Unicode because it's symmetric and renders well as-is.
+  // Styles are static — compute once rather than on every popup creation.
+  const POPUP_STYLES = getPopupStyles();
+
+  // SVG icons — inline so rendering is pixel-exact and independent of the host page's font stack.
   const ICON_PLAY = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 10" width="8" height="10" aria-hidden="true" style="margin-left:2px"><polygon points="0,0 8,5 0,10" fill="currentColor"/></svg>`;
   const ICON_MOON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/></svg>`;
-  const ICON_SUN = "\u2600";
+  const ICON_SUN = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>`;
 
   // Load saved theme preference
   chrome.storage.sync.get("theme", (result) => {
@@ -33,7 +34,7 @@
 
     // Inject styles into shadow DOM
     const style = document.createElement("style");
-    style.textContent = getPopupStyles();
+    style.textContent = POPUP_STYLES;
     shadow.appendChild(style);
 
     const container = document.createElement("div");
@@ -112,19 +113,20 @@
   // --- Rendering ---
 
   function renderDefinition(data) {
+    const themeIcon = currentTheme === "dark" ? ICON_SUN : ICON_MOON;
+    const themeLabel =
+      currentTheme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+    const headerActions = `
+      <div class="glimpse-header-actions">
+        <button class="glimpse-theme-toggle" aria-label="${themeLabel}">${themeIcon}</button>
+        <button class="glimpse-close" aria-label="Close">&times;</button>
+      </div>`;
+
     if (data.error) {
-      const themeIcon = currentTheme === "dark" ? ICON_SUN : ICON_MOON;
-      const themeLabel =
-        currentTheme === "dark"
-          ? "Switch to light mode"
-          : "Switch to dark mode";
       return `
         <div class="glimpse-header">
           <span class="glimpse-word">Not found</span>
-          <div class="glimpse-header-actions">
-            <button class="glimpse-theme-toggle" aria-label="${themeLabel}">${themeIcon}</button>
-            <button class="glimpse-close" aria-label="Close">&times;</button>
-          </div>
+          ${headerActions}
         </div>
         <p class="glimpse-error">${escapeHtml(data.error)}</p>
       `;
@@ -137,10 +139,6 @@
     const audioBtn = data.audioUrl
       ? `<button class="glimpse-audio-btn" data-audio-url="${escapeHtml(data.audioUrl)}" aria-label="Play pronunciation">${ICON_PLAY}</button>`
       : "";
-
-    const themeIcon = currentTheme === "dark" ? ICON_SUN : ICON_MOON;
-    const themeLabel =
-      currentTheme === "dark" ? "Switch to light mode" : "Switch to dark mode";
 
     const meanings = data.meanings
       .map((m) => {
@@ -168,10 +166,7 @@
           ${phonetic}
           ${audioBtn}
         </div>
-        <div class="glimpse-header-actions">
-          <button class="glimpse-theme-toggle" aria-label="${themeLabel}">${themeIcon}</button>
-          <button class="glimpse-close" aria-label="Close">&times;</button>
-        </div>
+        ${headerActions}
       </div>
       ${meanings}
     `;

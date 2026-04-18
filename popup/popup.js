@@ -2,8 +2,10 @@ const manifest = chrome.runtime.getManifest();
 document.getElementById("version").textContent = `v${manifest.version}`;
 
 const themeBtn = document.getElementById("theme-toggle");
+let currentTheme = "dark";
 
 function applyTheme(theme) {
+  currentTheme = theme;
   document.body.classList.toggle("dark", theme === "dark");
   themeBtn.textContent = theme === "dark" ? "Light" : "Dark";
 }
@@ -14,8 +16,7 @@ chrome.storage.sync.get("theme", (result) => {
 });
 
 themeBtn.addEventListener("click", () => {
-  const isDark = document.body.classList.contains("dark");
-  const newTheme = isDark ? "light" : "dark";
+  const newTheme = currentTheme === "dark" ? "light" : "dark";
   chrome.storage.sync.set({ theme: newTheme });
   applyTheme(newTheme);
 });
