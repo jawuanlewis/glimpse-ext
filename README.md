@@ -42,11 +42,13 @@ The popup appears near the selected text and dismisses when you click elsewhere 
 ```text
 glimpse-ext/
 ├── manifest.json       # Extension config (Manifest V3)
-├── background.js       # Service worker — handles API requests
-├── content.js          # Content script — word selection & popup rendering
+├── background.js       # Service worker — API requests & audio playback routing
+├── content.js          # Content script — word selection, popup lifecycle & rendering
+├── offscreen.html      # Offscreen document shell (audio playback outside host-page CSP)
+├── offscreen.js        # Offscreen document logic — plays pronunciation audio
 ├── popup/
 │   ├── popup.html      # Toolbar popup UI
-│   └── popup.js        # Toolbar popup logic
+│   └── popup.js        # Toolbar popup — version display & theme toggle
 ├── icons/              # Extension icons (16, 48, 128px)
 └── utils/
     └── api.js          # Dictionary API client
