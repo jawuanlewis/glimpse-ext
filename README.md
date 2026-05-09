@@ -10,7 +10,7 @@ Chrome extension that shows instant word definitions on highlight — powered by
 
 ### Chrome Web Store
 
-> Coming soon — a link to the published extension will be added here.
+View and install [Glimpse](https://chromewebstore.google.com/detail/ampidfgddfkbpibhppmjclafaeajcbfl?utm_source=item-share-cb)
 
 ### Load Unpacked (Developer Mode)
 
