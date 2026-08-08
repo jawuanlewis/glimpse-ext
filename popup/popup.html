@@ -44,6 +44,65 @@
         color: #aaa;
       }
 
+      .enabled-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 0 0 12px 0;
+      }
+
+      .enabled-row span {
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 34px;
+        height: 20px;
+        flex-shrink: 0;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .switch .slider {
+        position: absolute;
+        inset: 0;
+        cursor: pointer;
+        background: #ccc;
+        border-radius: 20px;
+        transition: background 0.15s;
+      }
+
+      .switch .slider::before {
+        content: "";
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        left: 2px;
+        top: 2px;
+        background: #fff;
+        border-radius: 50%;
+        transition: transform 0.15s;
+      }
+
+      .switch input:checked + .slider {
+        background: #4a7c59;
+      }
+
+      .switch input:checked + .slider::before {
+        transform: translateX(14px);
+      }
+
+      body.dark .switch input:not(:checked) + .slider {
+        background: #444;
+      }
+
       .theme-row {
         display: flex;
         justify-content: space-between;
@@ -87,6 +146,13 @@
   <body>
     <h1>Glimpse</h1>
     <p class="version" id="version"></p>
+    <div class="enabled-row">
+      <span>Enabled</span>
+      <label class="switch">
+        <input type="checkbox" id="enabled-toggle" />
+        <span class="slider"></span>
+      </label>
+    </div>
     <p>Highlight any word on a webpage to see its definition instantly.</p>
     <div class="theme-row">
       <span>Theme</span>

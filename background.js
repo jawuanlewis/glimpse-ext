@@ -11,6 +11,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+// Reflect the enabled/disabled state on the toolbar icon so it's obvious at a
+// glance that Glimpse is off, without needing to open the popup.
+function updateBadge(enabled) {
+  chrome.action.setBadgeText({ text: enabled ? "" : "OFF" });
+  chrome.action.setBadgeBackgroundColor({ color: "#999999" });
+}
+
+chrome.storage.sync.get("enabled", (result) => {
+  updateBadge(result.enabled !== false);
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "sync" && changes.enabled) {
+    updateBadge(changes.enabled.newValue !== false);
+  }
+});
+
 // Cached promise so rapid back-to-back PLAY_AUDIO messages don't race on
 // createDocument() — both calls await the same in-flight promise instead.
 let offscreenReady = null;

@@ -3,6 +3,7 @@
   let popupHost = null;
   let shadowContainer = null; // kept in scope so the storage listener can reach it
   let currentTheme = "dark";
+  let isEnabled = true;
 
   // Styles are static — compute once rather than on every popup creation.
   const POPUP_STYLES = getPopupStyles();
@@ -12,26 +13,35 @@
   const ICON_MOON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/></svg>`;
   const ICON_SUN = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>`;
 
-  // Load saved theme preference
-  chrome.storage.sync.get("theme", (result) => {
+  // Load saved preferences
+  chrome.storage.sync.get(["theme", "enabled"], (result) => {
     if (result.theme) currentTheme = result.theme;
+    if (result.enabled === false) isEnabled = false;
   });
 
-  // Keep an open popup in sync when the theme is changed from the toolbar popup.
+  // Keep an open popup in sync when settings are changed from the toolbar popup.
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== "sync" || !changes.theme) return;
-    currentTheme = changes.theme.newValue;
-    if (!shadowContainer) return;
-    shadowContainer.classList.toggle("glimpse-dark", currentTheme === "dark");
-    const themeBtn = shadowContainer.querySelector(".glimpse-theme-toggle");
-    if (themeBtn) {
-      themeBtn.innerHTML = currentTheme === "dark" ? ICON_SUN : ICON_MOON;
-      themeBtn.setAttribute(
-        "aria-label",
-        currentTheme === "dark"
-          ? "Switch to light mode"
-          : "Switch to dark mode",
-      );
+    if (area !== "sync") return;
+
+    if (changes.enabled) {
+      isEnabled = changes.enabled.newValue !== false;
+      if (!isEnabled) removePopup();
+    }
+
+    if (changes.theme) {
+      currentTheme = changes.theme.newValue;
+      if (!shadowContainer) return;
+      shadowContainer.classList.toggle("glimpse-dark", currentTheme === "dark");
+      const themeBtn = shadowContainer.querySelector(".glimpse-theme-toggle");
+      if (themeBtn) {
+        themeBtn.innerHTML = currentTheme === "dark" ? ICON_SUN : ICON_MOON;
+        themeBtn.setAttribute(
+          "aria-label",
+          currentTheme === "dark"
+            ? "Switch to light mode"
+            : "Switch to dark mode",
+        );
+      }
     }
   });
 
@@ -216,6 +226,8 @@
   document.addEventListener("mouseup", (e) => {
     // Ignore clicks inside our own popup
     if (popupHost?.contains(e.target)) return;
+
+    if (!isEnabled) return;
 
     // Small delay to let the selection finalize
     setTimeout(() => {

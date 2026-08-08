@@ -20,3 +20,14 @@ themeBtn.addEventListener("click", () => {
   chrome.storage.sync.set({ theme: newTheme });
   applyTheme(newTheme);
 });
+
+const enabledToggle = document.getElementById("enabled-toggle");
+
+// Load saved enabled state (default to enabled)
+chrome.storage.sync.get("enabled", (result) => {
+  enabledToggle.checked = result.enabled !== false;
+});
+
+enabledToggle.addEventListener("change", () => {
+  chrome.storage.sync.set({ enabled: enabledToggle.checked });
+});

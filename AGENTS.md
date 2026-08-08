@@ -20,7 +20,7 @@ glimpse-ext/
 ├── offscreen.js        # Offscreen document — plays pronunciation audio outside host-page CSP
 ├── popup/
 │   ├── popup.html      # Toolbar popup UI (shown when clicking the extension icon)
-│   └── popup.js        # Toolbar popup logic — version display and theme toggle
+│   └── popup.js        # Toolbar popup logic — version display, enabled toggle, theme toggle
 ├── utils/
 │   └── api.js          # DictionaryAPI object — fetch + normalize API responses
 └── icons/              # Extension icons (16, 48, 128px)
@@ -81,5 +81,6 @@ glimpse-ext/
 - **Service worker scope** — `background.js` cannot access the DOM. `utils/api.js` uses `fetch` (available in service workers), not any browser UI API.
 - **Toolbar popup (`popup/`) is informational + settings** — it displays the extension name, version, and a theme toggle. It does not interact with the content script or background worker directly, but shares the theme preference via `chrome.storage.sync`.
 - **Theme preference** — stored in `chrome.storage.sync` under the key `"theme"` (`"dark"` or `"light"`). Dark is the default. Both the content script popup and the toolbar popup read/write this key, so changes in either take effect everywhere.
+- **Enabled/disabled state** — stored in `chrome.storage.sync` under the key `"enabled"` (boolean). Absent/`true` means enabled — treat as `!== false` when reading, never `=== true`, so existing installs without the key default to on. The toolbar popup's switch writes this key; `content.js` reads it at load and via `storage.onChanged` to gate the `mouseup` listener and to tear down any open popup the moment it's flipped off. `background.js` also listens for this key to mirror it onto the toolbar icon via `chrome.action.setBadgeText` (`"OFF"` when disabled, cleared when enabled).
 - **Audio pronunciation** — `DictionaryAPI.normalize()` surfaces an `audioUrl` from the API's `phonetics` array. `content.js` renders a play button and sends a `PLAY_AUDIO` message to `background.js`, which delegates to an offscreen document. Do **not** call `new Audio().play()` directly from `content.js` — host pages' CSPs block media from external domains, and content scripts are subject to them.
 - **Popup host positioning** — `popupHost.style.position` must be set to `"absolute"` _before_ appending to the DOM. As a block element, an unstyled host div stretches to the body width; measuring it with `getBoundingClientRect()` while still `position: static` returns the full page width, causing the right-edge guard to snap the popup to the left edge of the screen.
