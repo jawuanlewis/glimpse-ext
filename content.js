@@ -154,9 +154,16 @@
       </div>`;
 
     if (data.error) {
+      const ERROR_HEADERS = {
+        "not-found": "Not found",
+        timeout: "Timed out",
+        service: "Service unavailable",
+        network: "Connection error",
+      };
+      const headerText = ERROR_HEADERS[data.errorType] || "Error";
       return `
         <div class="glimpse-header">
-          <span class="glimpse-word">Not found</span>
+          <span class="glimpse-word">${headerText}</span>
           ${headerActions}
         </div>
         <p class="glimpse-error">${escapeHtml(data.error)}</p>
@@ -249,6 +256,7 @@
             createPopup(
               renderDefinition({
                 error: "Could not reach dictionary service.",
+                errorType: "network",
               }),
               rect,
             );

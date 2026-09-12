@@ -29,18 +29,17 @@ glimpse-ext/
 ## How It Works
 
 1. `content.js` runs on every page (`<all_urls>`), listening for `mouseup` events.
-2. On mouseup, it validates the selected text (letters/apostrophes/hyphens only, ≤50 chars), then shows a loading popup immediately.
-3. It sends a `LOOKUP_WORD` message to `background.js` (the service worker).
-4. `background.js` calls `DictionaryAPI.lookup()` from `utils/api.js` and returns the normalized result.
-5. `content.js` receives the response and re-renders the popup with the definition (or an error).
+2. On mouseup, it validates the selected text (letters/apostrophes/hyphens only, ≤50 chars) and sends a `LOOKUP_WORD` message to `background.js` (the service worker). No loading popup is shown — the popup only appears once a response comes back (a loading state existed pre-v1.1.0 and was intentionally removed; do not re-add this line without also re-adding that UI).
+3. `background.js` calls `DictionaryAPI.lookup()` from `utils/api.js` and returns the normalized result.
+4. `content.js` receives the response and creates the popup, rendering the definition (or an error).
 
 ## Message Passing
 
-| Type                   | Direction                  | Payload         | Response                                                |
-| ---------------------- | -------------------------- | --------------- | ------------------------------------------------------- |
-| `LOOKUP_WORD`          | content → background       | `{ word: str }` | `{ word, phonetic, audioUrl, meanings }` or `{ error }` |
-| `PLAY_AUDIO`           | content → background       | `{ url: str }`  | none                                                    |
-| `PLAY_AUDIO_OFFSCREEN` | background → offscreen doc | `{ url: str }`  | none                                                    |
+| Type                   | Direction                  | Payload         | Response                                                           |
+| ---------------------- | -------------------------- | --------------- | ------------------------------------------------------------------ |
+| `LOOKUP_WORD`          | content → background       | `{ word: str }` | `{ word, phonetic, audioUrl, meanings }` or `{ error, errorType }` |
+| `PLAY_AUDIO`           | content → background       | `{ url: str }`  | none                                                               |
+| `PLAY_AUDIO_OFFSCREEN` | background → offscreen doc | `{ url: str }`  | none                                                               |
 
 `background.js` returns `true` from `onMessage` to keep the channel open for async responses.
 
@@ -51,10 +50,12 @@ glimpse-ext/
 { word: string, phonetic: string|null, audioUrl: string|null, meanings: [{ partOfSpeech, definitions: [{ definition, example|null }] }] }
 
 // Error
-{ error: string }
+{ error: string, errorType: "not-found" | "timeout" | "service" | "network" }
 ```
 
 `normalize()` caps meanings at **2 definitions per part of speech** (`.slice(0, 2)`).
+
+`lookup()` aborts the request after `TIMEOUT_MS` (5000ms) via `AbortController` and maps failures to an `errorType` — `content.js`'s `renderDefinition` uses this to pick the popup header (`"Not found"`, `"Timed out"`, `"Service unavailable"`, `"Connection error"`) so a slow/unreachable API doesn't get mislabeled as a missing word.
 
 ## Conventions
 
@@ -84,3 +85,4 @@ glimpse-ext/
 - **Enabled/disabled state** — stored in `chrome.storage.sync` under the key `"enabled"` (boolean). Absent/`true` means enabled — treat as `!== false` when reading, never `=== true`, so existing installs without the key default to on. The toolbar popup's switch writes this key; `content.js` reads it at load and via `storage.onChanged` to gate the `mouseup` listener and to tear down any open popup the moment it's flipped off. `background.js` also listens for this key to mirror it onto the toolbar icon via `chrome.action.setBadgeText` (`"OFF"` when disabled, cleared when enabled).
 - **Audio pronunciation** — `DictionaryAPI.normalize()` surfaces an `audioUrl` from the API's `phonetics` array. `content.js` renders a play button and sends a `PLAY_AUDIO` message to `background.js`, which delegates to an offscreen document. Do **not** call `new Audio().play()` directly from `content.js` — host pages' CSPs block media from external domains, and content scripts are subject to them.
 - **Popup host positioning** — `popupHost.style.position` must be set to `"absolute"` _before_ appending to the DOM. As a block element, an unstyled host div stretches to the body width; measuring it with `getBoundingClientRect()` while still `position: static` returns the full page width, causing the right-edge guard to snap the popup to the left edge of the screen.
+- **`DictionaryAPI.lookup()` times out after 5s** (`TIMEOUT_MS`, via `AbortController`) so a slow/unreachable API fails fast instead of hanging as long as the browser lets it. If `api.dictionaryapi.dev`'s origin is slow or unreachable, Cloudflare (which fronts it) otherwise returns a `522` after ~20s — the timeout preempts that and surfaces `errorType: "timeout"` instead. A wave of "Timed out" or "Service unavailable" popups (as opposed to "Not found") points to an upstream API outage, not an extension regression — verify with `curl -w "%{http_code} %{time_total}"` against the API directly before assuming the code broke.
