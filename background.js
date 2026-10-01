@@ -7,7 +7,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === "PLAY_AUDIO") {
-    playAudioViaOffscreen(message.url);
+    playPronunciation(message.word);
   }
 });
 
@@ -42,7 +42,7 @@ async function ensureOffscreenDocument() {
             url: "offscreen.html",
             reasons: [chrome.offscreen.Reason.AUDIO_PLAYBACK],
             justification:
-              "Play word pronunciation audio from the dictionary API.",
+              "Play word pronunciation recordings from Wiktionary.",
           });
         }
       })
@@ -54,12 +54,34 @@ async function ensureOffscreenDocument() {
   return offscreenReady;
 }
 
+// Play a human recording from Wiktionary when one exists; otherwise (or if
+// playback fails) fall back to Chrome's built-in text-to-speech, so every
+// word gets a pronunciation.
+async function playPronunciation(word) {
+  if (typeof word !== "string" || !word || word.length > 50) return;
+
+  let url = null;
+  try {
+    url = await DictionaryAPI.findAudioUrl(word);
+  } catch (err) {
+    console.warn("Glimpse: audio lookup failed, using text-to-speech", err);
+  }
+
+  if (url && (await playAudioViaOffscreen(url))) return;
+  chrome.tts.speak(word, { lang: "en-US" });
+}
+
+// Resolves true once playback has started, false if it couldn't.
 async function playAudioViaOffscreen(url) {
-  if (!url) return;
   try {
     await ensureOffscreenDocument();
-    chrome.runtime.sendMessage({ type: "PLAY_AUDIO_OFFSCREEN", url });
+    const response = await chrome.runtime.sendMessage({
+      type: "PLAY_AUDIO_OFFSCREEN",
+      url,
+    });
+    return response?.ok === true;
   } catch (err) {
     console.error("Glimpse: audio playback failed", err);
+    return false;
   }
 }

@@ -114,8 +114,8 @@
     if (audioBtn) {
       audioBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        const url = audioBtn.dataset.audioUrl;
-        if (url) chrome.runtime.sendMessage({ type: "PLAY_AUDIO", url });
+        const word = audioBtn.dataset.word;
+        if (word) chrome.runtime.sendMessage({ type: "PLAY_AUDIO", word });
       });
     }
   }
@@ -174,9 +174,16 @@
       ? `<span class="glimpse-phonetic">${escapeHtml(data.phonetic)}</span>`
       : "";
 
-    const audioBtn = data.audioUrl
-      ? `<button class="glimpse-audio-btn" data-audio-url="${escapeHtml(data.audioUrl)}" aria-label="Play pronunciation">${ICON_PLAY}</button>`
-      : "";
+    // Always shown — background.js falls back to text-to-speech when
+    // Wiktionary has no recording for the word.
+    const audioBtn = `<button class="glimpse-audio-btn" data-word="${escapeHtml(data.word)}" aria-label="Play pronunciation">${ICON_PLAY}</button>`;
+
+    // Wiktionary content is CC BY-SA 4.0 and requires attribution.
+    const via = data.source.via ? ` via ${escapeHtml(data.source.via)}` : "";
+    const source = `
+      <div class="glimpse-source">
+        Source: <a href="${escapeHtml(data.source.url)}" target="_blank" rel="noopener noreferrer">Wiktionary</a>${via}
+      </div>`;
 
     const meanings = data.meanings
       .map((m) => {
@@ -207,6 +214,7 @@
         ${headerActions}
       </div>
       ${meanings}
+      ${source}
     `;
   }
 
@@ -215,7 +223,8 @@
   function escapeHtml(str) {
     const div = document.createElement("div");
     div.textContent = str;
-    return div.innerHTML;
+    // innerHTML doesn't escape quotes, which matters inside attribute values.
+    return div.innerHTML.replaceAll('"', "&quot;");
   }
 
   function isValidWord(text) {
@@ -422,6 +431,18 @@
         font-size: 13px;
       }
 
+      .glimpse-source {
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid #eee;
+        font-size: 11px;
+        color: #999;
+      }
+
+      .glimpse-source a {
+        color: inherit;
+      }
+
       .glimpse-error {
         margin: 0;
         color: #888;
@@ -465,6 +486,11 @@
 
       .glimpse-dark .glimpse-example {
         color: #999;
+      }
+
+      .glimpse-dark .glimpse-source {
+        color: #777;
+        border-top-color: #333;
       }
 
       .glimpse-dark .glimpse-error {
